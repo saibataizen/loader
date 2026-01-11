@@ -1,3 +1,6 @@
+-- Loading Screen with Mini-Game (Click the Orbs)
+-- Paste into: StarterPlayer > StarterPlayerScripts (LocalScript)
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
