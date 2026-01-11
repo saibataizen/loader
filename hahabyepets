@@ -1,10 +1,11 @@
--- Suspense Loading Screen with Fake System Messages
--- Paste into: StarterPlayer > StarterPlayerScripts (LocalScript)
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local player = Players.LocalPlayer
+
+local LOADING_TIME = 60
+local score = 0
+local running = true
 
 -- Blur
 local blur = Instance.new("BlurEffect")
@@ -13,119 +14,113 @@ blur.Parent = Lighting
 
 -- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "SystemLoadingGui"
+gui.Name = "LoadingMinigameGui"
+gui.IgnoreGuiInset = true
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 -- Background
 local bg = Instance.new("Frame")
 bg.Size = UDim2.new(1,0,1,0)
-bg.BackgroundColor3 = Color3.fromRGB(8,8,8)
+bg.BackgroundColor3 = Color3.fromRGB(10,10,10)
 bg.Parent = gui
 
 -- Title
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,0,0.12,0)
-title.Position = UDim2.new(0,0,0.25,0)
+title.Size = UDim2.new(1,0,0.1,0)
+title.Position = UDim2.new(0,0,0.1,0)
 title.BackgroundTransparency = 1
-title.Text = "INITIALIZING EXPERIENCE"
+title.Text = "LOADING — CLICK THE ORBS"
 title.Font = Enum.Font.GothamBold
 title.TextScaled = true
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.Parent = bg
 
--- Status Message
+-- Score
+local scoreLabel = Instance.new("TextLabel")
+scoreLabel.Size = UDim2.new(1,0,0.07,0)
+scoreLabel.Position = UDim2.new(0,0,0.2,0)
+scoreLabel.BackgroundTransparency = 1
+scoreLabel.Text = "Score: 0"
+scoreLabel.Font = Enum.Font.Gotham
+scoreLabel.TextScaled = true
+scoreLabel.TextColor3 = Color3.fromRGB(180,180,180)
+scoreLabel.Parent = bg
+
+-- Fake system text
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1,0,0.08,0)
-status.Position = UDim2.new(0,0,0.38,0)
+status.Size = UDim2.new(1,0,0.06,0)
+status.Position = UDim2.new(0,0,0.28,0)
 status.BackgroundTransparency = 1
-status.Text = "Starting services..."
 status.Font = Enum.Font.Code
 status.TextScaled = true
 status.TextColor3 = Color3.fromRGB(150,150,150)
+status.Text = "99.8% — Finalizing assets..."
 status.Parent = bg
 
--- Percent
-local percentText = Instance.new("TextLabel")
-percentText.Size = UDim2.new(1,0,0.08,0)
-percentText.Position = UDim2.new(0,0,0.46,0)
-percentText.BackgroundTransparency = 1
-percentText.Text = "0.0%"
-percentText.Font = Enum.Font.Gotham
-percentText.TextScaled = true
-percentText.TextColor3 = Color3.fromRGB(200,200,200)
-percentText.Parent = bg
+-- Mini-game area
+local playArea = Instance.new("Frame")
+playArea.Size = UDim2.new(0.8,0,0.45,0)
+playArea.Position = UDim2.new(0.1,0,0.38,0)
+playArea.BackgroundColor3 = Color3.fromRGB(20,20,20)
+playArea.BorderSizePixel = 0
+playArea.Parent = bg
+Instance.new("UICorner", playArea)
 
--- Bar BG
-local barBG = Instance.new("Frame")
-barBG.Size = UDim2.new(0.45,0,0.025,0)
-barBG.Position = UDim2.new(0.275,0,0.56,0)
-barBG.BackgroundColor3 = Color3.fromRGB(30,30,30)
-barBG.BorderSizePixel = 0
-barBG.Parent = bg
+-- Function to spawn clickable orb
+local function spawnOrb()
+	if not running then return end
 
--- Bar
-local bar = Instance.new("Frame")
-bar.Size = UDim2.new(0,0,1,0)
-bar.BackgroundColor3 = Color3.fromRGB(255,255,255)
-bar.BorderSizePixel = 0
-bar.Parent = barBG
+	local orb = Instance.new("TextButton")
+	orb.Size = UDim2.new(0,50,0,50)
+	orb.Position = UDim2.new(math.random(),-25,math.random(),-25)
+	orb.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	orb.Text = ""
+	orb.AutoButtonColor = false
+	orb.Parent = playArea
+	Instance.new("UICorner", orb).CornerRadius = UDim.new(1,0)
 
-Instance.new("UICorner", barBG).CornerRadius = UDim.new(1,0)
-Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
+	orb.MouseButton1Click:Connect(function()
+		score += 1
+		scoreLabel.Text = "Score: "..score
+		orb:Destroy()
+	end)
 
--- Fake System Messages
-local messages = {
-	"Starting Roblox services...",
-	"Loading replicated assets...",
-	"Syncing player data...",
-	"Optimizing textures...",
-	"Finalizing environment...",
-	"Applying performance patches...",
-	"Almost ready..."
-}
+	-- Auto remove
+	task.delay(1.5, function()
+		if orb and orb.Parent then
+			orb:Destroy()
+		end
+	end)
+end
 
--- Loading Animation
-local msgIndex = 1
+-- Spawn orbs loop
+task.spawn(function()
+	while running do
+		spawnOrb()
+		task.wait(0.6)
+	end
+end)
 
-for i = 1, 998 do
-	local percent = i / 10
-	bar.Size = UDim2.new(percent/100,0,1,0)
-	percentText.Text = string.format("%.1f%%", percent)
+-- Loading timer
+task.delay(LOADING_TIME, function()
+	running = false
 
-	if i % 120 == 0 and msgIndex <= #messages then
-		status.Text = messages[msgIndex]
-		msgIndex += 1
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
 	end
 
-	task.wait(0.01)
-end
+	status.Text = "Loading complete!"
 
--- STUCK AT 99.8%
-percentText.Text = "99.8%"
-status.Text = "Final checks in progress..."
-bar.Size = UDim2.new(0.998,0,1,0)
+	local tween = TweenInfo.new(1)
+	TweenService:Create(bg, tween, {BackgroundTransparency = 1}):Play()
+	TweenService:Create(title, tween, {TextTransparency = 1}):Play()
+	TweenService:Create(scoreLabel, tween, {TextTransparency = 1}):Play()
+	TweenService:Create(status, tween, {TextTransparency = 1}):Play()
+	TweenService:Create(playArea, tween, {BackgroundTransparency = 1}):Play()
+	TweenService:Create(blur, tween, {Size = 0}):Play()
 
-task.wait(3) -- suspense (safe)
-
--- Finish
-percentText.Text = "100%"
-status.Text = "Complete."
-
-if not game:IsLoaded() then
-	game.Loaded:Wait()
-end
-
--- Fade Out
-local tween = TweenInfo.new(1)
-TweenService:Create(bg, tween, {BackgroundTransparency = 1}):Play()
-TweenService:Create(title, tween, {TextTransparency = 1}):Play()
-TweenService:Create(status, tween, {TextTransparency = 1}):Play()
-TweenService:Create(percentText, tween, {TextTransparency = 1}):Play()
-TweenService:Create(barBG, tween, {BackgroundTransparency = 1}):Play()
-TweenService:Create(bar, tween, {BackgroundTransparency = 1}):Play()
-TweenService:Create(blur, tween, {Size = 0}):Play()
-
-task.wait(1)
-gui:Destroy()
-blur:Destroy()
+	task.wait(1)
+	gui:Destroy()
+	blur:Destroy()
+end)
